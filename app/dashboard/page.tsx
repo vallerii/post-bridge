@@ -37,7 +37,7 @@ export default async function DashboardPage() {
     redirect("/auth");
   }
   return (
-    <div className="gap-6 bg-[#0F0F11] flex flex-col p-8 min-h-screen">
+    <div className="flex flex-col gap-6">
       <DashboardHeader />
 
       <DashboardStats stats={data.stats} />
