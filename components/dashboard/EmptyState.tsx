@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { JSX } from "react/jsx-runtime";
 
 interface Props {
-  emoji: string;
+  emoji: JSX.Element | string;
   title: string;
   description: string;
   buttonLabel: string;

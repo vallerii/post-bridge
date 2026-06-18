@@ -6,12 +6,29 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import clsx from 'clsx'
 import Image from 'next/image'
+import { DashboardIcon, NewPostIcon, PlatformsIcon, PostsIcon } from '@/ui/IconGradient'
 
 const NAV = [
-  { href: '/dashboard', icon: '📊', label: 'Дашборд' },
-  { href: '/platforms', icon: '🔌', label: 'Платформи' },
-  { href: '/posts/new', icon: '✏️', label: 'Новий пост' },
-  { href: '/posts',     icon: '📋', label: 'Публікації' },
+  {
+    href: '/dashboard',
+    icon: <DashboardIcon />,
+    label: 'Дашборд',
+  },
+  {
+    href: '/platforms',
+    icon: <PlatformsIcon />,
+    label: 'Платформи',
+  },
+  {
+    href: '/posts/new',
+    icon: <NewPostIcon />,
+    label: 'Новий пост',
+  },
+  {
+    href: '/posts',
+    icon: <PostsIcon />,
+    label: 'Публікації',
+  },
 ]
 
 export function Sidebar() {
@@ -29,8 +46,14 @@ export function Sidebar() {
     <aside className="fixed top-0 left-0 bottom-0 min-w-[220px] bg-[#17171A] border-r border-[#2A2A32] flex flex-col px-3 py-6 z-40">
 
       {/* Logo */}
-      <div className="flex items-center gap-2.5 mb-8">
-        <Image src="/post-bridge-logobig.png" alt="Logo" width={190} height={40} />
+      {/* <div className="flex items-center gap-2.5 mb-8">
+        <Image src="/post-bridge-logo.png" alt="Logo" width={190} height={40} />
+      </div> */}
+      <div className="flex flex-col items-center gap-2.5 mb-8">
+        <Image src="/post-bridge-logo.png" alt="Logo" width={190} height={40} />
+        <span className="text-white font-bold text-base">
+          Post - <span className="text-[#A78BFA]">Bridge</span>
+        </span>
       </div>
 
       {/* Nav */}
