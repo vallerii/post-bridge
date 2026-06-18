@@ -10,7 +10,9 @@ export async function createPost(formData: {
   price: string
   currency: string
   targets: string[]
-  status: 'draft' | 'published'
+  status: 'draft' | 'published',
+  media_urls?: string[]
+  media_types?: string[] 
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -26,6 +28,8 @@ export async function createPost(formData: {
       currency: formData.currency,
       targets: formData.targets,
       status: formData.status,
+      media_urls: formData.media_urls,
+      media_types: formData.media_types,
       published_at: formData.status === 'published' ? new Date().toISOString() : null,
     })
     .select()

@@ -2,6 +2,10 @@
 
 import { useState } from 'react'
 import { createPost } from '@/lib/posts/actions'
+import { useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { MediaUpload } from './MediaUpload'
+import type { MediaFile } from '@/lib/storage/upload'
 
 const PLATFORM_META: Record<string, {
   name: string; icon: string; chipClass: string
@@ -25,6 +29,14 @@ export function PostForm({ connectedPlatforms }: Props) {
   const [currency, setCurrency] = useState('UAH')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [media, setMedia] = useState<MediaFile[]>([])
+  const [userId, setUserId] = useState<string>('')
+
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data }) => {
+      if (data.user) setUserId(data.user.id)
+    })
+  }, [])
 
   function toggleTarget(p: string) {
     setTargets(prev =>
@@ -53,7 +65,16 @@ export function PostForm({ connectedPlatforms }: Props) {
     setLoading(true)
     setError('')
     try {
-      await createPost({ title, description: desc, price, currency, targets, status })
+      await createPost({
+        title,
+        description: desc,
+        price,
+        currency,
+        targets,
+        status,
+        media_urls: media.map(f => f.url),        // ← добавь
+        media_types: media.map(f => f.type),      // ← добавь
+      })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Помилка')
       setLoading(false)
@@ -99,7 +120,18 @@ export function PostForm({ connectedPlatforms }: Props) {
         <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-4">
           2. Контент
         </div>
-
+        <div>
+          <label className="text-zinc-400 text-sm font-semibold block mb-1.5">
+            Медіафайли
+          </label>
+          {userId && (
+            <MediaUpload
+              userId={userId}
+              value={media}
+              onChange={setMedia}
+            />
+          )}
+        </div>
         <div className="flex flex-col gap-4">
           <div>
             <label className="text-zinc-400 text-sm font-semibold block mb-1.5">
