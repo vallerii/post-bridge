@@ -1,10 +1,4 @@
-interface Post {
-  title: string | null
-  description: string | null
-  price: number | null
-  currency: string | null
-  image_url: string | null
-}
+import { PostData } from "./types"
 
 interface InstagramCredentials {
   account_id: string
@@ -12,8 +6,8 @@ interface InstagramCredentials {
 }
 
 export async function publishToInstagram(
-  post: Post,
-  credentials: InstagramCredentials
+  post: PostData,
+  credentials: Record<string, string>
 ) {
   const { account_id, access_token } = credentials
 

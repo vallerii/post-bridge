@@ -1,9 +1,4 @@
-interface Post {
-  title: string | null
-  description: string | null
-  price: number | null
-  currency: string | null
-}
+import { PostData } from "./types"
 
 interface TelegramCredentials {
   bot_token: string
@@ -11,8 +6,8 @@ interface TelegramCredentials {
 }
 
 export async function publishToTelegram(
-  post: Post,
-  credentials: TelegramCredentials
+  post: PostData,
+  credentials: Record<string, string>
 ) {
   const { chat_id } = credentials
   const bot_token = process.env.TELEGRAM_BOT_TOKEN!  // ← из env, не от юзера

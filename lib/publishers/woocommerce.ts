@@ -1,9 +1,4 @@
-interface Post {
-  title: string | null
-  description: string | null
-  price: number | null
-  image_url: string | null
-}
+import { PostData } from "./types"
 
 interface WooCredentials {
   site_url: string
@@ -12,8 +7,8 @@ interface WooCredentials {
 }
 
 export async function publishToWooCommerce(
-  post: Post,
-  credentials: WooCredentials
+  post: PostData,
+  credentials: Record<string, string>
 ) {
   if (!post.title) throw new Error('WooCommerce вимагає заголовок')
 

@@ -3,6 +3,18 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { publishToTelegram } from '@/lib/publishers/telegram'
+import { publishToInstagram } from '@/lib/publishers/instagram'
+import { publishToProm } from '@/lib/publishers/prom'
+import { publishToWooCommerce } from '@/lib/publishers/woocommerce'
+import type { Publisher } from '@/lib/publishers/types'
+
+const PUBLISHERS: Record<string, Publisher> = {
+  telegram: publishToTelegram,
+  instagram: publishToInstagram,
+  prom: publishToProm,
+  woocommerce: publishToWooCommerce,
+}
 
 export async function createPost(formData: {
   title: string
@@ -10,15 +22,15 @@ export async function createPost(formData: {
   price: string
   currency: string
   targets: string[]
-  status: 'draft' | 'published',
-  media_urls?: string[]
-  media_types?: string[] 
+  status: 'draft' | 'published'
+  media_urls: string[]
+  media_types: string[]
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  const { data, error } = await supabase
+  const { data: post, error } = await supabase
     .from('posts')
     .insert({
       user_id: user.id,
@@ -37,28 +49,43 @@ export async function createPost(formData: {
 
   if (error) throw new Error(error.message)
 
+  if (formData.status === 'published') {
+    // Берём credentials платформ напрямую — без HTTP запроса
+    const { data: platforms } = await supabase
+      .from('connected_platforms')
+      .select('platform, credentials')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .in('platform', formData.targets)
+
+    if (platforms?.length) {
+      const results = await Promise.allSettled(
+        platforms.map(({ platform, credentials }) => {
+          const publish = PUBLISHERS[platform]
+          if (!publish) throw new Error(`No publisher for ${platform}`)
+          return publish(post, credentials)
+        })
+      )
+
+      const failed = results.filter(r => r.status === 'rejected')
+
+      // Обновляем статус
+      await supabase
+        .from('posts')
+        .update({
+          status: failed.length === 0 ? 'published' : 'partial',
+        })
+        .eq('id', post.id)
+
+      // Если все упали — показываем ошибку
+      if (failed.length === results.length) {
+        const reason = (failed[0] as PromiseRejectedResult).reason?.message
+        throw new Error(`Помилка публікації: ${reason}`)
+      }
+    }
+  }
+
   revalidatePath('/posts')
   revalidatePath('/dashboard')
-
-  if (formData.status === 'published') {
-    // тут буде виклик реальних API платформ
-    await publishToPlatforms(data.id, formData.targets)
-  }
-
   redirect('/posts')
-}
-
-async function publishToPlatforms(postId: string, _targets: string[]) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/publish`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ postId }),
-  })
-
-  if (!res.ok) {
-    const data = await res.json()
-    throw new Error(data.error ?? 'Publish failed')
-  }
-
-  return res.json()
 }
