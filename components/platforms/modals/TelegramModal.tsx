@@ -12,7 +12,6 @@ export function TelegramModal({ onClose, onSuccess }: Props) {
   const [step, setStep] = useState(1)
   const [chatType, setChatType] = useState<'channel'|'group'|null>(null)
   const [isAdmin, setIsAdmin] = useState<'yes'|'no'|null>(null)
-  const [botToken, setBotToken] = useState('')
   const [chatId, setChatId] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -20,7 +19,7 @@ export function TelegramModal({ onClose, onSuccess }: Props) {
   async function handleConnect() {
     setLoading(true); setError('')
     try {
-      await connectPlatform('telegram', { bot_token: botToken, chat_id: chatId, chat_type: chatType! })
+      await connectPlatform('telegram', { chat_id: chatId, chat_type: chatType! })
       setStep(3)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Помилка підключення')
@@ -70,33 +69,40 @@ export function TelegramModal({ onClose, onSuccess }: Props) {
 
       {step === 2 && (
         <>
-          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-4">Крок 2 — Дані бота</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-4">
+            Крок 2 — Chat ID
+          </p>
           <div className="p-3 bg-[#6C63FF]/10 border border-[#6C63FF]/30 rounded-lg text-[#A78BFA] text-sm mb-5">
-            📌 Створіть бота: @BotFather → /newbot → отримайте токен
+            📌 Додайте <b>@PostBridgeAssistantBot</b> в групу/канал як адміністратора — 
+            бот автоматично надішле Chat ID в чат
           </div>
-          <div className="flex flex-col gap-4">
-            <div>
-              <label className="text-zinc-400 text-sm font-semibold block mb-1.5">Bot Token</label>
-              <input className="w-full bg-[#1E1E23] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2.5 text-white text-sm outline-none transition-colors"
-                placeholder="7123456789:AAFxxx..." value={botToken} onChange={e => setBotToken(e.target.value)} />
-              <p className="text-zinc-500 text-xs mt-1">Формат: цифри:букви</p>
-            </div>
-            <div>
-              <label className="text-zinc-400 text-sm font-semibold block mb-1.5">Chat ID або @username</label>
-              <input className="w-full bg-[#1E1E23] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2.5 text-white text-sm outline-none transition-colors"
-                placeholder="@mychannel або -1001234567890" value={chatId} onChange={e => setChatId(e.target.value)} />
-            </div>
+          <div>
+            <label className="text-zinc-400 text-sm font-semibold block mb-1.5">Chat ID</label>
+            <input
+              className="w-full bg-[#1E1E23] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2.5 text-white text-sm outline-none font-mono transition-colors"
+              placeholder="-1001234567890"
+              value={chatId}
+              onChange={e => setChatId(e.target.value)}
+            />
+            <p className="text-zinc-500 text-xs mt-1">
+              Бот надішле ID автоматично коли ви його додасте в групу
+            </p>
           </div>
-          {error && <div className="mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">{error}</div>}
           <div className="flex justify-end gap-2 mt-6">
-            <button onClick={() => setStep(1)} className="px-4 py-2 rounded-lg bg-[#1E1E23] text-zinc-400 text-sm font-semibold hover:text-white transition-colors">← Назад</button>
-            <button onClick={handleConnect} disabled={!botToken.includes(':') || !chatId || loading}
-              className="px-4 py-2 rounded-lg bg-[#6C63FF] hover:bg-[#7B74FF] disabled:opacity-40 text-white text-sm font-semibold transition-colors">
-              {loading ? 'Перевірка...' : 'Підключити →'}
+            <button onClick={() => setStep(1)} className="px-4 py-2 rounded-lg bg-[#1E1E23] text-zinc-400 text-sm font-semibold hover:text-white transition-colors">
+              ← Назад
+            </button>
+            <button
+              onClick={handleConnect}
+              disabled={!chatId || loading}
+              className="px-4 py-2 rounded-lg bg-[#6C63FF] hover:bg-[#7B74FF] disabled:opacity-40 text-white text-sm font-semibold transition-colors"
+            >
+              {loading ? 'Підключення...' : 'Підключити →'}
             </button>
           </div>
         </>
       )}
+
 
       {step === 3 && (
         <div className="text-center py-4">

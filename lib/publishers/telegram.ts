@@ -14,7 +14,8 @@ export async function publishToTelegram(
   post: Post,
   credentials: TelegramCredentials
 ) {
-  const { bot_token, chat_id } = credentials
+  const { chat_id } = credentials
+  const bot_token = process.env.TELEGRAM_BOT_TOKEN!  // ← из env, не от юзера
 
   // Формируем текст
   const parts: string[] = []
