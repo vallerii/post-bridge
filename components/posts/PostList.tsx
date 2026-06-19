@@ -42,43 +42,44 @@ export function PostList({ posts }: Props) {
   return (
     <div className="flex flex-col gap-3">
       {posts.map((post) => (
-        <div
-          key={post.id}
-          className="bg-[#17171A] border border-[#2A2A32] hover:border-[#6C63FF]/50 rounded-xl p-4 flex items-start gap-4 transition-colors"
-        >
-          {/* icon */}
-          <div className="w-12 h-12 rounded-lg bg-[#1E1E23] flex items-center justify-center text-2xl shrink-0">
-            {post.targets?.[0] ? PLATFORM_META[post.targets[0]]?.icon ?? '📝' : '📝'}
-          </div>
+        <Link key={post.id} href={`/posts/${post.id}`}>
+          <div
+            className="bg-[#17171A] border border-[#2A2A32] hover:border-[#6C63FF]/50 rounded-xl p-4 flex items-start gap-4 transition-colors"
+          >
+            {/* icon */}
+            <div className="w-12 h-12 rounded-lg bg-[#1E1E23] flex items-center justify-center text-2xl shrink-0">
+              {post.targets?.[0] ? PLATFORM_META[post.targets[0]]?.icon ?? '📝' : '📝'}
+            </div>
 
-          {/* content */}
-          <div className="flex-1 min-w-0">
-            <div className="text-white font-semibold truncate">
-              {post.title || post.description?.substring(0, 60) || 'Без назви'}
-            </div>
-            <div className="text-zinc-500 text-xs mt-1">
-              {new Date(post.created_at).toLocaleDateString('uk-UA')}
-              {post.price ? ` • ${post.price} ${post.currency ?? 'UAH'}` : ''}
-            </div>
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {(post.targets ?? []).map((t) => {
-                const m = PLATFORM_META[t]
-                return m ? (
-                  <span key={t} className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m.color}`}>
-                    {m.icon} {m.name}
-                  </span>
-                ) : null
-              })}
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full
-                ${post.status === 'published'
-                  ? 'bg-emerald-500/15 text-emerald-400'
-                  : 'bg-zinc-700/50 text-zinc-400'
-                }`}>
-                {post.status === 'published' ? '✓ Опубліковано' : 'Чернетка'}
-              </span>
+            {/* content */}
+            <div className="flex-1 min-w-0">
+              <div className="text-white font-semibold truncate">
+                {post.title || post.description?.substring(0, 60) || 'Без назви'}
+              </div>
+              <div className="text-zinc-500 text-xs mt-1">
+                {new Date(post.created_at).toLocaleDateString('uk-UA')}
+                {post.price ? ` • ${post.price} ${post.currency ?? 'UAH'}` : ''}
+              </div>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {(post.targets ?? []).map((t) => {
+                  const m = PLATFORM_META[t]
+                  return m ? (
+                    <span key={t} className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m.color}`}>
+                      {m.icon} {m.name}
+                    </span>
+                  ) : null
+                })}
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full
+                  ${post.status === 'published'
+                    ? 'bg-emerald-500/15 text-emerald-400'
+                    : 'bg-zinc-700/50 text-zinc-400'
+                  }`}>
+                  {post.status === 'published' ? '✓ Опубліковано' : 'Чернетка'}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        </Link>
       ))}
     </div>
   )
