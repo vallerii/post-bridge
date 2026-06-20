@@ -46,6 +46,8 @@ export async function GET(req: NextRequest) {
     )
     const longData = await longRes.json()
     const longToken = longData.access_token ?? shortToken
+    console.log('[INSTAGRAM CALLBACK] tokenData:', tokenData)
+console.log('[INSTAGRAM CALLBACK] longData:', longData)
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
