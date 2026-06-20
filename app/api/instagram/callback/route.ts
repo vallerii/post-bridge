@@ -50,6 +50,13 @@ export async function GET(req: NextRequest) {
     console.log('[INSTAGRAM CALLBACK] longData:', JSON.stringify(longData))
 
     const longToken = longData.access_token ?? shortToken
+    const accountRes = await fetch(
+      `https://graph.instagram.com/v22.0/me?fields=id,username&access_token=${longToken}`
+    )
+    const accountData = await accountRes.json()
+    console.log('[INSTAGRAM CALLBACK] accountData:', JSON.stringify(accountData))
+
+    const realAccountId = accountData.id ?? String(igUserId)
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -63,10 +70,12 @@ export async function GET(req: NextRequest) {
           platform: 'instagram',
           credentials: {
             access_token: longToken,
-            account_id: String(igUserId),
+            account_id: realAccountId,
           },
           is_active: true,
-          token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+          token_expires_at: new Date(
+            new Date().getTime() + 60 * 24 * 60 * 60 * 1000
+          ).toISOString(),
         },
         { onConflict: 'user_id,platform' }
       )
