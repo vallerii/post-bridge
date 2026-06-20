@@ -40,14 +40,16 @@ export async function GET(req: NextRequest) {
     const shortToken = tokenData.access_token
     const igUserId = tokenData.user_id
 
+    console.log('[INSTAGRAM CALLBACK] tokenData:', JSON.stringify(tokenData))
+
     // Short-lived → Long-lived (60 днів)
     const longRes = await fetch(
       `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTAGRAM_APP_SECRET}&access_token=${shortToken}`
     )
     const longData = await longRes.json()
+    console.log('[INSTAGRAM CALLBACK] longData:', JSON.stringify(longData))
+
     const longToken = longData.access_token ?? shortToken
-    console.log('[INSTAGRAM CALLBACK] tokenData:', tokenData)
-console.log('[INSTAGRAM CALLBACK] longData:', longData)
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
