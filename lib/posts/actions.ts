@@ -63,6 +63,12 @@ export async function createPost(formData: {
         platforms.map(({ platform, credentials }) => {
           const publish = PUBLISHERS[platform]
           if (!publish) throw new Error(`No publisher for ${platform}`)
+
+          console.log(`[PUBLISH] ${platform} credentials:`, JSON.stringify({
+            account_id: (credentials as Record<string, string>).account_id,
+            token_start: (credentials as Record<string, string>).access_token?.substring(0, 20),
+          }))
+
           return publish(post, credentials)
         })
       )
