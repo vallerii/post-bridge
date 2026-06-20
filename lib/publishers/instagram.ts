@@ -1,5 +1,27 @@
 import type { PostData } from './types'
 
+async function waitForContainer(
+  accountId: string,
+  containerId: string,
+  accessToken: string,
+  maxAttempts = 10
+): Promise<void> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const res = await fetch(
+      `https://graph.instagram.com/v22.0/${containerId}?fields=status_code&access_token=${accessToken}`
+    )
+    const data = await res.json()
+    console.log(`[INSTAGRAM] container status attempt ${i + 1}:`, data.status_code)
+
+    if (data.status_code === 'FINISHED') return
+    if (data.status_code === 'ERROR') throw new Error('Instagram: container processing failed')
+
+    // Чекаємо 2 секунди між спробами
+    await new Promise(r => setTimeout(r, 2000))
+  }
+  throw new Error('Instagram: container processing timeout')
+}
+
 export async function publishToInstagram(
   post: PostData,
   credentials: Record<string, string>
@@ -41,6 +63,8 @@ export async function publishToInstagram(
 
     const container = await containerRes.json()
     if (container.error) throw new Error(`Instagram: ${container.error.message}`)
+
+    await waitForContainer(account_id, container.id, access_token)
 
     const publishRes = await fetch(
       `https://graph.instagram.com/v22.0/${account_id}/media_publish`,
