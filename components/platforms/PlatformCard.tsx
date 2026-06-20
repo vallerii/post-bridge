@@ -10,9 +10,11 @@ interface Props {
   platform: Platform
   isConnected: boolean
   onConnect: () => void
+  tokenExpiresSoon?: boolean
 }
 
-export function PlatformCard({ platform, isConnected, onConnect }: Props) {
+export function PlatformCard({ platform, isConnected, tokenExpiresSoon = false, onConnect }: Props) {
+  
   return (
     <div
       className={`relative bg-[#17171A] border rounded-xl p-5 transition-all cursor-pointer overflow-hidden
@@ -38,7 +40,11 @@ export function PlatformCard({ platform, isConnected, onConnect }: Props) {
 
       <div className="text-white font-bold text-base mb-1">{platform.name}</div>
       <div className="text-zinc-400 text-sm leading-relaxed">{platform.desc}</div>
-
+      {isConnected && tokenExpiresSoon && (
+        <div className="mt-2 flex items-center gap-1.5 text-amber-400 text-xs bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1.5">
+          ⚠️ Токен закінчується — переподключіть
+        </div>
+      )}
       <div className="mt-4">
         <span className={`text-sm font-semibold
           ${isConnected ? 'text-emerald-400' : 'text-[#A78BFA]'}`}>

@@ -62,6 +62,7 @@ export async function GET(req: NextRequest) {
             account_id: String(igUserId),
           },
           is_active: true,
+          token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
         },
         { onConflict: 'user_id,platform' }
       )

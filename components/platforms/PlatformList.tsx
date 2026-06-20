@@ -47,9 +47,10 @@ const MODALS: Record<string, React.ComponentType<{ onClose: () => void; onSucces
 
 interface Props {
   connected: string[]
+  expiringPlatforms: string[]
 }
 
-export function PlatformList({ connected }: Props) {
+export function PlatformList({ connected, expiringPlatforms }: Props) {
   const [connectedList, setConnectedList] = useState<string[]>(connected)
   const [openModal, setOpenModal] = useState<string | null>(null)
 
@@ -64,6 +65,7 @@ export function PlatformList({ connected }: Props) {
             platform={p}
             isConnected={connectedList.includes(p.id)}
             onConnect={() => setOpenModal(p.id)}
+            tokenExpiresSoon={expiringPlatforms.includes(p.id)}
           />
         ))}
       </div>
