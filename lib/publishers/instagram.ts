@@ -24,7 +24,7 @@ export async function publishToInstagram(
     const isVideo = mediaTypes[0] === 'video'
 
     const containerRes = await fetch(
-      `https://graph.facebook.com/v22.0/${account_id}/media`,
+      `https://graph.instagram.com/v22.0/${account_id}/media`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -43,7 +43,7 @@ export async function publishToInstagram(
     if (container.error) throw new Error(`Instagram: ${container.error.message}`)
 
     const publishRes = await fetch(
-      `https://graph.facebook.com/v22.0/${account_id}/media_publish`,
+      `https://graph.instagram.com/v22.0/${account_id}/media_publish`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -66,7 +66,7 @@ export async function publishToInstagram(
     const isVideo = mediaTypes[i] === 'video'
 
     const childRes = await fetch(
-      `https://graph.facebook.com/v22.0/${account_id}/media`,
+      `https://graph.instagram.com/v22.0/${account_id}/media`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -88,7 +88,7 @@ export async function publishToInstagram(
 
   // Крок 2 — створюємо carousel container
   const carouselRes = await fetch(
-    `https://graph.facebook.com/v22.0/${account_id}/media`,
+    `https://graph.instagram.com/v22.0/${account_id}/media`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -106,7 +106,7 @@ export async function publishToInstagram(
 
   // Крок 3 — публікуємо
   const publishRes = await fetch(
-    `https://graph.facebook.com/v22.0/${account_id}/media_publish`,
+    `https://graph.instagram.com/v22.0/${account_id}/media_publish`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
