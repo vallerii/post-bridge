@@ -69,6 +69,15 @@ export async function createPost(formData: {
 
       const failed = results.filter(r => r.status === 'rejected')
 
+      // Логуємо всі результати
+      results.forEach((result, i) => {
+        const platform = platforms[i].platform
+        if (result.status === 'rejected') {
+          console.error(`[PUBLISH ERROR] ${platform}:`, result.reason?.message)
+        } else {
+          console.log(`[PUBLISH OK] ${platform}`)
+        }
+      })
       // Обновляем статус
       await supabase
         .from('posts')

@@ -1,10 +1,5 @@
 import { PostData } from "./types"
 
-interface InstagramCredentials {
-  account_id: string
-  access_token: string
-}
-
 export async function publishToInstagram(
   post: PostData,
   credentials: Record<string, string>
