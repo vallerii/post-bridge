@@ -6,6 +6,7 @@ export interface PostData {
   image_url?: string | null
   media_urls?: string[]
   media_types?: string[]
+  prom_data?: unknown
 }
 
 export type Publisher = (

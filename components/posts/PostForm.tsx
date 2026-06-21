@@ -6,6 +6,8 @@ import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { MediaUpload } from './MediaUpload'
 import type { MediaFile } from '@/lib/storage/upload'
+import { PromFields, type PromData } from './PromFields'
+
 
 const PLATFORM_META: Record<string, {
   name: string; icon: string; chipClass: string
@@ -31,7 +33,15 @@ export function PostForm({ connectedPlatforms }: Props) {
   const [error, setError] = useState('')
   const [media, setMedia] = useState<MediaFile[]>([])
   const [userId, setUserId] = useState<string>('')
-
+  const [promData, setPromData] = useState<PromData>({
+    category_id: '',
+    old_price: '',
+    availability: 'in_stock',
+    quantity: '',
+    unit: 'шт',
+    sku: '',
+    keywords: [],
+  })
   useEffect(() => {
     createClient().auth.getUser().then(({ data }) => {
       if (data.user) setUserId(data.user.id)
@@ -56,6 +66,10 @@ export function PostForm({ connectedPlatforms }: Props) {
     if (!desc.trim() && !title.trim()) errors.push('потрібен текст')
     if (m.needsPrice && !price) warns.push('немає ціни')
     if (desc.length > m.maxChars) errors.push(`текст > ${m.maxChars} символів`)
+    if (p === 'prom') {
+      if (!promData.category_id) errors.push('не вибрана категорія')
+      // if (!promData.sku) errors.push('не заповнений артикул')
+    }
     return { ok: errors.length === 0, errors, warns }
   }
 
@@ -74,6 +88,7 @@ export function PostForm({ connectedPlatforms }: Props) {
         status,
         media_urls: media.map(f => f.url),        // ← добавь
         media_types: media.map(f => f.type),      // ← добавь
+        prom_data: targets.includes('prom') ? promData : null,
       })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Помилка')
@@ -183,6 +198,9 @@ export function PostForm({ connectedPlatforms }: Props) {
                 </select>
               </div>
             </div>
+          )}
+          {targets.includes('prom') && (
+            <PromFields value={promData} onChange={setPromData} />
           )}
         </div>
       </div>

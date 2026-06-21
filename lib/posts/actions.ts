@@ -8,6 +8,7 @@ import { publishToInstagram } from '@/lib/publishers/instagram'
 import { publishToProm } from '@/lib/publishers/prom'
 import { publishToWooCommerce } from '@/lib/publishers/woocommerce'
 import type { Publisher } from '@/lib/publishers/types'
+import type {PromData}  from '@/components/posts/PromFields'
 
 const PUBLISHERS: Record<string, Publisher> = {
   telegram: publishToTelegram,
@@ -25,6 +26,7 @@ export async function createPost(formData: {
   status: 'draft' | 'published'
   media_urls: string[]
   media_types: string[]
+  prom_data?: PromData | null
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -43,6 +45,7 @@ export async function createPost(formData: {
       media_urls: formData.media_urls,
       media_types: formData.media_types,
       published_at: formData.status === 'published' ? new Date().toISOString() : null,
+      prom_data: formData.prom_data ?? null,
     })
     .select()
     .single()
