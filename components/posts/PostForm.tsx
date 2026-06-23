@@ -17,6 +17,7 @@ const PLATFORM_META: Record<string, {
   telegram:    { name: 'Telegram',    icon: '✈️', chipClass: 'border-sky-500/50 bg-sky-500/10 text-sky-400',        maxChars: 4096, needsTitle: false, needsPrice: false },
   prom:        { name: 'Prom.ua',     icon: '🛒', chipClass: 'border-orange-500/50 bg-orange-500/10 text-orange-400', maxChars: 9999, needsTitle: true,  needsPrice: true },
   woocommerce: { name: 'WooCommerce', icon: '🌐', chipClass: 'border-purple-500/50 bg-purple-500/10 text-purple-400', maxChars: 9999, needsTitle: true,  needsPrice: true },
+  horoshop:    { name: 'Horoshop',    icon: '🏪', chipClass: 'border-red-500/50 bg-red-500/10 text-red-400',        maxChars: 9999, needsTitle: true,  needsPrice: true },
 }
 
 interface Props {
@@ -34,14 +35,18 @@ export function PostForm({ connectedPlatforms }: Props) {
   const [media, setMedia] = useState<MediaFile[]>([])
   const [userId, setUserId] = useState<string>('')
   const [promData, setPromData] = useState<PromData>({
-    category_id: '',
+    group_id: '',
+    group_name: '',
+    marketplace_category_id: '',
     old_price: '',
     availability: 'in_stock',
     quantity: '',
     unit: 'шт',
     sku: '',
     keywords: [],
+    vendor: '',
   })
+
   useEffect(() => {
     createClient().auth.getUser().then(({ data }) => {
       if (data.user) setUserId(data.user.id)
@@ -57,7 +62,6 @@ export function PostForm({ connectedPlatforms }: Props) {
   const needsPrice = targets.some(t => PLATFORM_META[t]?.needsPrice)
   const needsTitle = targets.some(t => PLATFORM_META[t]?.needsTitle)
 
-  // Validation per platform
   function getValidation(p: string) {
     const m = PLATFORM_META[p]
     const errors: string[] = []
@@ -66,10 +70,6 @@ export function PostForm({ connectedPlatforms }: Props) {
     if (!desc.trim() && !title.trim()) errors.push('потрібен текст')
     if (m.needsPrice && !price) warns.push('немає ціни')
     if (desc.length > m.maxChars) errors.push(`текст > ${m.maxChars} символів`)
-    if (p === 'prom') {
-      if (!promData.category_id) errors.push('не вибрана категорія')
-      // if (!promData.sku) errors.push('не заповнений артикул')
-    }
     return { ok: errors.length === 0, errors, warns }
   }
 
@@ -86,8 +86,8 @@ export function PostForm({ connectedPlatforms }: Props) {
         currency,
         targets,
         status,
-        media_urls: media.map(f => f.url),        // ← добавь
-        media_types: media.map(f => f.type),      // ← добавь
+        media_urls: media.map(f => f.url),
+        media_types: media.map(f => f.type),
         prom_data: targets.includes('prom') ? promData : null,
       })
     } catch (e: unknown) {
@@ -199,6 +199,7 @@ export function PostForm({ connectedPlatforms }: Props) {
               </div>
             </div>
           )}
+
           {targets.includes('prom') && (
             <PromFields value={promData} onChange={setPromData} />
           )}

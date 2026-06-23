@@ -7,6 +7,7 @@ const PLATFORM_META: Record<string, { icon: string; name: string; color: string 
   telegram:    { icon: '✈️', name: 'Telegram',    color: 'bg-sky-500/15 text-sky-400' },
   prom:        { icon: '🛒', name: 'Prom.ua',     color: 'bg-orange-500/15 text-orange-400' },
   woocommerce: { icon: '🌐', name: 'WooCommerce', color: 'bg-purple-500/15 text-purple-400' },
+  horoshop:    { icon: '🏪', name: 'Horoshop',    color: 'bg-red-500/15 text-red-400' },
 }
 
 export default async function PostPage({
@@ -27,6 +28,10 @@ export default async function PostPage({
     .single()
 
   if (!post) notFound()
+
+  const hasProm = post.targets?.includes('prom')
+  const hasHoroshop = post.targets?.includes('horoshop')
+  const hasFileDownload = hasProm || hasHoroshop
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
@@ -105,6 +110,57 @@ export default async function PostPage({
           })}
         </div>
       </div>
+
+      {/* Завантаження файлів для імпорту */}
+      {hasFileDownload && (
+        <div className="bg-[#17171A] border border-[#2A2A32] rounded-xl p-6">
+          <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+            Файли для імпорту
+          </div>
+          <p className="text-zinc-500 text-xs mb-4">
+            Завантажте файл і імпортуйте його вручну в кабінеті маркетплейсу
+          </p>
+          <div className="flex flex-col gap-3">
+
+            {hasProm && (
+              <div className="flex items-center justify-between p-4 bg-orange-500/5 border border-orange-500/20 rounded-xl">
+                <div>
+                  <div className="text-white text-sm font-semibold">🛒 Prom.ua</div>
+                  <div className="text-zinc-500 text-xs mt-0.5">
+                    YML файл → Кабінет Prom → Товари → Імпорт
+                  </div>
+                </div>
+                <a
+                  href={`/api/posts/${id}/download/prom`}
+                  download
+                  className="px-4 py-2 rounded-lg bg-orange-500/15 border border-orange-500/30 text-orange-400 text-sm font-semibold hover:bg-orange-500/25 transition-colors whitespace-nowrap"
+                >
+                  ↓ Завантажити YML
+                </a>
+              </div>
+            )}
+
+            {hasHoroshop && (
+              <div className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/20 rounded-xl">
+                <div>
+                  <div className="text-white text-sm font-semibold">🏪 Horoshop</div>
+                  <div className="text-zinc-500 text-xs mt-0.5">
+                    CSV файл → Кабінет Horoshop → Товари → Імпорт
+                  </div>
+                </div>
+                <a
+                  href={`/api/posts/${id}/download/horoshop`}
+                  download
+                  className="px-4 py-2 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-sm font-semibold hover:bg-red-500/25 transition-colors whitespace-nowrap"
+                >
+                  ↓ Завантажити CSV
+                </a>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
 
       {/* Meta */}
       <div className="text-zinc-500 text-xs">

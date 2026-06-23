@@ -1,21 +1,29 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 
-interface Category {
-  external_id: string
+interface PromGroup {
+  id: number
   name: string
-  full_path: string
+  parent_group_id: number | null
+}
+
+interface PromCategory {
+  id: number
+  caption: string
 }
 
 export interface PromData {
-  category_id: string
+  group_id: string               // група на сайті (необов'язково)
+  group_name: string             // назва групи для YML
+  marketplace_category_id: string // категорія маркетплейсу (необов'язково)
   old_price: string
   availability: 'in_stock' | 'order' | 'not_available'
   quantity: string
   unit: string
   sku: string
   keywords: string[]
+  vendor: string
 }
 
 interface Props {
@@ -29,40 +37,45 @@ const AVAILABILITY_OPTIONS = [
   { value: 'not_available', label: '❌ Немає в наявності' },
 ]
 
-export function PromFields({ value, onChange }: Props) {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [search, setSearch] = useState('')
-  const [syncing, setSyncing] = useState(false)
-  const [keywordInput, setKeywordInput] = useState('')
+function buildGroupPath(group: PromGroup, all: PromGroup[]): string {
+  if (!group.parent_group_id) return group.name
+  const parent = all.find(g => g.id === group.parent_group_id)
+  if (!parent) return group.name
+  return `${buildGroupPath(parent, all)} → ${group.name}`
+}
 
-  const loadCategories = useCallback(async () => {
-    const res = await fetch('/api/prom/categories')
-    const data = await res.json()
-    setCategories(data.categories ?? [])
-  }, [])
+export function PromFields({ value, onChange }: Props) {
+  const [groups, setGroups] = useState<PromGroup[]>([])
+  const [categories, setCategories] = useState<PromCategory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [groupSearch, setGroupSearch] = useState('')
+  const [categorySearch, setCategorySearch] = useState('')
+  const [keywordInput, setKeywordInput] = useState('')
 
   useEffect(() => {
     let cancelled = false
 
-    async function load() {
-      const res = await fetch('/api/prom/categories')
-      const data = await res.json()
-      if (!cancelled) setCategories(data.categories ?? [])
-    }
+    fetch('/api/prom/groups')
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return
+        if (data.error) {
+          setError(data.error)
+        } else {
+          setGroups(data.groups ?? [])
+          setCategories(data.categories ?? [])
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError('Не вдалось завантажити дані з Prom')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
 
-    load()
     return () => { cancelled = true }
   }, [])
-
-  async function handleSync() {
-    setSyncing(true)
-    try {
-      await fetch('/api/prom/sync-categories', { method: 'POST' })
-      await loadCategories()
-    } finally {
-      setSyncing(false)
-    }
-  }
 
   function addKeyword(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && keywordInput.trim()) {
@@ -78,11 +91,22 @@ export function PromFields({ value, onChange }: Props) {
     onChange({ ...value, keywords: value.keywords.filter(k => k !== kw) })
   }
 
-  const filtered = categories.filter(c =>
-    c.full_path.toLowerCase().includes(search.toLowerCase())
+  // Групи з повним шляхом для відображення
+  const groupsWithPath = groups.map(g => ({
+    ...g,
+    fullPath: buildGroupPath(g, groups),
+  }))
+
+  const filteredGroups = groupsWithPath.filter(g =>
+    g.fullPath.toLowerCase().includes(groupSearch.toLowerCase())
   )
 
-  const selectedCategory = categories.find(c => c.external_id === value.category_id)
+  const filteredCategories = categories.filter(c =>
+    c.caption.toLowerCase().includes(categorySearch.toLowerCase())
+  )
+
+  const selectedGroup = groupsWithPath.find(g => String(g.id) === value.group_id)
+  const selectedCategory = categories.find(c => String(c.id) === value.marketplace_category_id)
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-[#1E1E23] rounded-xl border border-[#2A2A32]">
@@ -90,64 +114,133 @@ export function PromFields({ value, onChange }: Props) {
         🛒 Додаткові поля Prom.ua
       </div>
 
-      {/* Категорія */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="text-zinc-400 text-sm font-semibold">
-            Категорія <span className="text-red-400">*</span>
-          </label>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="text-xs text-[#A78BFA] hover:underline disabled:opacity-50"
-          >
-            {syncing ? 'Оновлення...' : '🔄 Оновити категорії'}
-          </button>
+      {loading && (
+        <div className="text-zinc-500 text-sm">Завантаження груп і категорій...</div>
+      )}
+
+      {error && (
+        <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+          ⚠️ {error}
         </div>
+      )}
 
-        {selectedCategory && (
-          <div className="mb-2 text-xs text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded-lg px-2.5 py-1.5">
-            ✓ {selectedCategory.full_path}
-          </div>
-        )}
+      {/* Група на сайті */}
+      {!loading && !error && (
+        <div>
+          <label className="text-zinc-400 text-sm font-semibold block mb-1.5">
+            Група на сайті{' '}
+            <span className="text-zinc-600">(необов&apos;язково)</span>
+          </label>
 
+          {selectedGroup && (
+            <div className="mb-2 flex items-center justify-between text-xs text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded-lg px-2.5 py-1.5">
+              <span>✓ {selectedGroup.fullPath}</span>
+              <button
+                onClick={() => { onChange({ ...value, group_id: '' }); setGroupSearch('') }}
+                className="text-zinc-500 hover:text-red-400 ml-2"
+              >✕</button>
+            </div>
+          )}
+
+          <input
+            className="w-full bg-[#17171A] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2 text-white text-sm outline-none mb-1"
+            placeholder={groups.length === 0 ? 'Групи відсутні в акаунті' : 'Пошук групи...'}
+            value={groupSearch}
+            onChange={e => setGroupSearch(e.target.value)}
+            disabled={groups.length === 0}
+          />
+
+          {groupSearch && (
+            <div className="max-h-40 overflow-y-auto border border-[#2A2A32] rounded-lg bg-[#17171A]">
+              {filteredGroups.length === 0 ? (
+                <div className="p-3 text-zinc-500 text-sm">Нічого не знайдено</div>
+              ) : (
+                filteredGroups.slice(0, 30).map(g => (
+                  <div
+                    key={g.id}
+                    onClick={() => {
+                      onChange({ ...value, group_id: String(g.id), group_name: g.fullPath })
+                      setGroupSearch('')
+                    }}
+                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-[#2A2A32] transition-colors
+                      ${value.group_id === String(g.id) ? 'text-orange-400' : 'text-zinc-300'}`}
+                  >
+                    {g.fullPath}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Категорія маркетплейсу */}
+      {!loading && !error && (
+        <div>
+          <label className="text-zinc-400 text-sm font-semibold block mb-1.5">
+            Категорія маркетплейсу{' '}
+            <span className="text-zinc-600">(необов&apos;язково — можна вибрати при імпорті)</span>
+          </label>
+
+          {selectedCategory && (
+            <div className="mb-2 flex items-center justify-between text-xs text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded-lg px-2.5 py-1.5">
+              <span>✓ {selectedCategory.caption}</span>
+              <button
+                onClick={() => { onChange({ ...value, marketplace_category_id: '' }); setCategorySearch('') }}
+                className="text-zinc-500 hover:text-red-400 ml-2"
+              >✕</button>
+            </div>
+          )}
+
+          <input
+            className="w-full bg-[#17171A] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2 text-white text-sm outline-none mb-1"
+            placeholder={categories.length === 0 ? 'Категорії недоступні' : 'Пошук категорії...'}
+            value={categorySearch}
+            onChange={e => setCategorySearch(e.target.value)}
+            disabled={categories.length === 0}
+          />
+
+          {categorySearch && (
+            <div className="max-h-40 overflow-y-auto border border-[#2A2A32] rounded-lg bg-[#17171A]">
+              {filteredCategories.length === 0 ? (
+                <div className="p-3 text-zinc-500 text-sm">Нічого не знайдено</div>
+              ) : (
+                filteredCategories.slice(0, 30).map(c => (
+                  <div
+                    key={c.id}
+                    onClick={() => {
+                      onChange({ ...value, marketplace_category_id: String(c.id) })
+                      setCategorySearch('')
+                    }}
+                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-[#2A2A32] transition-colors
+                      ${value.marketplace_category_id === String(c.id) ? 'text-orange-400' : 'text-zinc-300'}`}
+                  >
+                    {c.caption}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {categories.length === 0 && !loading && (
+            <div className="text-zinc-600 text-xs mt-1">
+              Можна вибрати категорію вручну при імпорті в кабінеті Prom
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Виробник */}
+      <div>
+        <label className="text-zinc-400 text-sm font-semibold block mb-1.5">
+          Виробник <span className="text-zinc-600">(необов&apos;язково)</span>
+        </label>
         <input
-          className="w-full bg-[#17171A] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2 text-white text-sm outline-none mb-1"
-          placeholder="Пошук категорії..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
+          className="w-full bg-[#17171A] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2 text-white text-sm outline-none"
+          placeholder="Samsung, Apple, Nike..."
+          value={value.vendor}
+          onChange={e => onChange({ ...value, vendor: e.target.value })}
         />
-
-        {search && (
-          <div className="max-h-48 overflow-y-auto border border-[#2A2A32] rounded-lg bg-[#17171A]">
-            {filtered.length === 0 ? (
-              <div className="p-3 text-zinc-500 text-sm">Нічого не знайдено</div>
-            ) : (
-              filtered.slice(0, 30).map(c => (
-                <div
-                  key={c.external_id}
-                  onClick={() => {
-                    onChange({ ...value, category_id: c.external_id })
-                    setSearch('')
-                  }}
-                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-[#2A2A32] transition-colors
-                    ${value.category_id === c.external_id ? 'text-orange-400' : 'text-zinc-300'}`}
-                >
-                  {c.full_path}
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {categories.length === 0 && (
-          <div className="text-zinc-500 text-xs mt-1">
-            Категорії не завантажені —{' '}
-            <button onClick={handleSync} className="text-[#A78BFA] hover:underline">
-              завантажити
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Стара ціна */}
@@ -203,15 +296,9 @@ export function PromFields({ value, onChange }: Props) {
             value={value.unit}
             onChange={e => onChange({ ...value, unit: e.target.value })}
           >
-            <option value="шт">шт</option>
-            <option value="кг">кг</option>
-            <option value="г">г</option>
-            <option value="м">м</option>
-            <option value="см">см</option>
-            <option value="л">л</option>
-            <option value="мл">мл</option>
-            <option value="пара">пара</option>
-            <option value="комплект">комплект</option>
+            {['шт','кг','г','м','см','л','мл','пара','комплект'].map(u => (
+              <option key={u} value={u}>{u}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -220,7 +307,7 @@ export function PromFields({ value, onChange }: Props) {
       <div>
         <label className="text-zinc-400 text-sm font-semibold block mb-1.5">
           Артикул (SKU){' '}
-          <span className="text-zinc-600">({"необов'язково — згенерується автоматично"})</span>
+          <span className="text-zinc-600">(необов&apos;язково)</span>
         </label>
         <input
           className="w-full bg-[#17171A] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2 text-white text-sm outline-none font-mono"
@@ -253,9 +340,7 @@ export function PromFields({ value, onChange }: Props) {
                 <button
                   onClick={() => removeKeyword(kw)}
                   className="text-zinc-500 hover:text-red-400 transition-colors"
-                >
-                  ✕
-                </button>
+                >✕</button>
               </span>
             ))}
           </div>

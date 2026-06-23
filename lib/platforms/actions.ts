@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { syncPromCategories } from '../prom/sync-categories'
 
 export async function connectPlatform(
   platform: string,
@@ -20,16 +19,6 @@ export async function connectPlatform(
     )
 
   if (error) throw new Error(error.message)
-
-  // Автосинхронізація категорій при підключенні Prom
-  if (platform === 'prom') {
-    try {
-      await syncPromCategories()
-    } catch (e) {
-      console.error('Auto sync categories failed:', e)
-      // Не кидаємо помилку — підключення пройшло успішно
-    }
-  }
 
   revalidatePath('/platforms')
 }

@@ -5,16 +5,16 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { publishToTelegram } from '@/lib/publishers/telegram'
 import { publishToInstagram } from '@/lib/publishers/instagram'
-import { publishToProm } from '@/lib/publishers/prom'
 import { publishToWooCommerce } from '@/lib/publishers/woocommerce'
 import type { Publisher } from '@/lib/publishers/types'
 import type {PromData}  from '@/components/posts/PromFields'
+import { publishToHoroshop } from '../publishers/horoshop'
 
 const PUBLISHERS: Record<string, Publisher> = {
   telegram: publishToTelegram,
   instagram: publishToInstagram,
-  prom: publishToProm,
   woocommerce: publishToWooCommerce,
+  horoshop: publishToHoroshop,
 }
 
 export async function createPost(formData: {
@@ -65,7 +65,9 @@ export async function createPost(formData: {
       const results = await Promise.allSettled(
         platforms.map(({ platform, credentials }) => {
           const publish = PUBLISHERS[platform]
-          if (!publish) throw new Error(`No publisher for ${platform}`)
+          if (!publish) {
+            return Promise.resolve()
+          }
 
           console.log(`[PUBLISH] ${platform} credentials:`, JSON.stringify({
             account_id: (credentials as Record<string, string>).account_id,

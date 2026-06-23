@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { publishToTelegram } from '@/lib/publishers/telegram'
 import { publishToInstagram } from '@/lib/publishers/instagram'
-import { publishToProm } from '@/lib/publishers/prom'
 import { publishToWooCommerce } from '@/lib/publishers/woocommerce'
 
 const PUBLISHERS: Record<string, Function> = {
   telegram: publishToTelegram,
   instagram: publishToInstagram,
-  prom: publishToProm,
   woocommerce: publishToWooCommerce,
 }
 

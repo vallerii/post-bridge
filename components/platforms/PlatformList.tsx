@@ -6,6 +6,7 @@ import { InstagramModal } from './modals/InstagramModal'
 import { TelegramModal } from './modals/TelegramModal'
 import { PromModal } from './modals/PromModal'
 import { WooModal } from './modals/WooModal'
+import { HoroshopModal } from './modals/HoroshopModal'
 
 const PLATFORMS = [
   {
@@ -36,6 +37,14 @@ const PLATFORMS = [
     desc: 'Синхронізація товарів з WordPress-магазином.',
     color: 'from-[#7F54B3] to-[#5B3A8A]',
   },
+  {
+    id: 'horoshop',
+    name: 'Horoshop',
+    icon: '🏪',
+    desc: 'Публікуйте товари у свій Horoshop магазин через API.',
+    color: 'from-[#FF6B35] to-[#E55A2B]',
+  },
+
 ]
 
 const MODALS: Record<string, React.ComponentType<{ onClose: () => void; onSuccess: () => void }>> = {
@@ -43,6 +52,7 @@ const MODALS: Record<string, React.ComponentType<{ onClose: () => void; onSucces
   telegram: TelegramModal,
   prom: PromModal,
   woocommerce: WooModal,
+  horoshop: HoroshopModal,
 }
 
 interface Props {
