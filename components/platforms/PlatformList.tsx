@@ -32,13 +32,13 @@ const PLATFORMS = [
     desc: 'Завантажуйте товари через YML файл.',
     color: 'from-[#7b04df] to-[#5a02a3]',
   },
-  {
-    id: 'woocommerce',
-    name: 'WooCommerce',
-    icon: '🌐',
-    desc: 'Синхронізація товарів з WordPress-магазином.',
-    color: 'from-[#7F54B3] to-[#5B3A8A]',
-  },
+  // {
+  //   id: 'woocommerce',
+  //   name: 'WooCommerce',
+  //   icon: '🌐',
+  //   desc: 'Синхронізація товарів з WordPress-магазином.',
+  //   color: 'from-[#7F54B3] to-[#5B3A8A]',
+  // },
   {
     id: 'horoshop',
     name: 'Horoshop',
