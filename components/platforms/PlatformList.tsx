@@ -7,6 +7,7 @@ import { TelegramModal } from './modals/TelegramModal'
 import { PromModal } from './modals/PromModal'
 import { WooModal } from './modals/WooModal'
 import { HoroshopModal } from './modals/HoroshopModal'
+import { HoroshopSettingsModal } from './modals/HoroshopSettingsModal'
 
 const PLATFORMS = [
   {
@@ -27,7 +28,7 @@ const PLATFORMS = [
     id: 'prom',
     name: 'Prom.ua',
     icon: '🛒',
-    desc: 'Створюйте картки товарів через офіційний API.',
+    desc: 'Завантажуйте товари через YML файл.',
     color: 'from-[#FF6600] to-[#CC4400]',
   },
   {
@@ -41,10 +42,9 @@ const PLATFORMS = [
     id: 'horoshop',
     name: 'Horoshop',
     icon: '🏪',
-    desc: 'Публікуйте товари у свій Horoshop магазин через API.',
+    desc: 'Публікуйте товари через API або CSV файл.',
     color: 'from-[#FF6B35] to-[#E55A2B]',
   },
-
 ]
 
 const MODALS: Record<string, React.ComponentType<{ onClose: () => void; onSuccess: () => void }>> = {
@@ -63,6 +63,7 @@ interface Props {
 export function PlatformList({ connected, expiringPlatforms }: Props) {
   const [connectedList, setConnectedList] = useState<string[]>(connected)
   const [openModal, setOpenModal] = useState<string | null>(null)
+  const [showHoroshopSettings, setShowHoroshopSettings] = useState(false)
 
   const ActiveModal = openModal ? MODALS[openModal] : null
 
@@ -70,13 +71,23 @@ export function PlatformList({ connected, expiringPlatforms }: Props) {
     <>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {PLATFORMS.map((p) => (
-          <PlatformCard
-            key={p.id}
-            platform={p}
-            isConnected={connectedList.includes(p.id)}
-            onConnect={() => setOpenModal(p.id)}
-            tokenExpiresSoon={expiringPlatforms.includes(p.id)}
-          />
+          <div key={p.id} className="flex flex-col gap-2">
+            <PlatformCard
+              platform={p}
+              isConnected={connectedList.includes(p.id)}
+              onConnect={() => setOpenModal(p.id)}
+              tokenExpiresSoon={expiringPlatforms.includes(p.id)}
+            />
+            {/* Кнопка налаштувань тільки для Horoshop якщо підключено */}
+            {p.id === 'horoshop' && connectedList.includes('horoshop') && (
+              <button
+                onClick={() => setShowHoroshopSettings(true)}
+                className="w-full py-2 rounded-lg bg-[#1E1E23] border border-[#2A2A32] hover:border-zinc-500 text-zinc-400 hover:text-white text-xs font-semibold transition-colors"
+              >
+                ⚙️ Налаштувати характеристики товарів
+              </button>
+            )}
+          </div>
         ))}
       </div>
 
@@ -90,6 +101,10 @@ export function PlatformList({ connected, expiringPlatforms }: Props) {
             setOpenModal(null)
           }}
         />
+      )}
+
+      {showHoroshopSettings && (
+        <HoroshopSettingsModal onClose={() => setShowHoroshopSettings(false)} />
       )}
     </>
   )

@@ -69,7 +69,9 @@ export function generatePromYml(post: PostForYml): string {
 ${groupBlock}    <offers>
       <offer id="${offerId}" available="${available}">
         <name>${name}</name>
+        <name_ua>${name}</name_ua>
         <description>${description}</description>
+        <description_ua>${description}</description_ua>
         <price>${price}</price>
         <currencyId>${currency}</currencyId>
         <categoryId>${categoryId}</categoryId>${marketplaceCat}${oldPrice}${vendor}${unit}${quantity}${keywords}

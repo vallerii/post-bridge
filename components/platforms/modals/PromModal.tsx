@@ -32,9 +32,34 @@ export function PromModal({ onClose, onSuccess }: Props) {
       {step === 1 && (
         <>
           <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-4">Крок 1 — Перевірка</p>
+
+          {/* Як працює інтеграція */}
+          <div className="mb-5 p-4 bg-orange-500/8 border border-orange-500/20 rounded-xl">
+            <div className="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-3">
+              📦 Як працює публікація на Prom
+            </div>
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-start gap-2.5 text-sm text-zinc-300">
+                <span className="text-zinc-500 shrink-0 mt-0.5">1.</span>
+                <span>Заповнюєте картку товару в нашому сервісі</span>
+              </div>
+              <div className="flex items-start gap-2.5 text-sm text-zinc-300">
+                <span className="text-zinc-500 shrink-0 mt-0.5">2.</span>
+                <span>Скачуєте готовий <span className="text-white font-semibold">YML файл</span> зі сторінки поста</span>
+              </div>
+              <div className="flex items-start gap-2.5 text-sm text-zinc-300">
+                <span className="text-zinc-500 shrink-0 mt-0.5">3.</span>
+                <span>Імпортуєте файл у кабінеті Prom: <span className="text-zinc-400">Товари → Імпорт</span></span>
+              </div>
+            </div>
+            <div className="mt-3 pt-3 border-t border-orange-500/15 text-zinc-500 text-xs">
+              API Prom не дозволяє створювати товари напряму — тільки через імпорт файлу
+            </div>
+          </div>
+
           <CheckQuestion
             title="Є активний магазин на Prom.ua?"
-            desc="API доступний тільки для верифікованих продавців з активним тарифним планом."
+            desc="API токен потрібен для завантаження ваших груп товарів при заповненні картки."
             value={hasShop} onChange={setHasShop}
             alertNo="Зареєструйтесь на Prom.ua як продавець та активуйте тариф. Потім поверніться."
           />
@@ -75,7 +100,9 @@ export function PromModal({ onClose, onSuccess }: Props) {
         <div className="text-center py-4">
           <div className="text-5xl mb-4">🎉</div>
           <div className="text-white font-bold text-lg mb-2">Prom.ua підключено!</div>
-          <div className="text-zinc-400 text-sm mb-6">Тепер можна створювати картки товарів</div>
+          <div className="text-zinc-400 text-sm mb-4">
+            При публікації поста ви зможете завантажити готовий YML файл для імпорту в кабінеті Prom
+          </div>
           <button onClick={onSuccess} className="w-full py-2.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-semibold text-sm hover:bg-emerald-500/25 transition-colors">Готово ✓</button>
         </div>
       )}

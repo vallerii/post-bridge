@@ -13,3 +13,11 @@ export type Publisher = (
   post: PostData,
   credentials: Record<string, string>
 ) => Promise<unknown>
+
+export interface HoroshopData {
+  sku: string
+  old_price: string
+  availability: 'in_stock' | 'order' | 'not_available'
+  quantity: string
+  custom_fields: Record<string, string> // { "Колір": "червоний", "Матеріал": "тканина" }
+}
