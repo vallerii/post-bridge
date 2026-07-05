@@ -8,15 +8,12 @@ interface PromGroup {
   parent_group_id: number | null
 }
 
-interface PromCategory {
-  id: number
-  caption: string
-}
-
 export interface PromData {
   group_id: string               // група на сайті (необов'язково)
-  group_name: string             // назва групи для YML
-  marketplace_category_id: string // категорія маркетплейсу (необов'язково)
+  group_name: string             // ВЛАСНА назва цієї групи (без шляху!) для YML
+  // Батьківська група (якщо є) — потрібна для тега parentId в YML, щоб Prom розпізнавав
+  // саме цю вкладену групу за id+parentId, а не створював нову через розбіжність назви.
+  group_parent_id: string
   old_price: string
   availability: 'in_stock' | 'order' | 'not_available'
   quantity: string
@@ -24,18 +21,20 @@ export interface PromData {
   sku: string
   keywords: string[]
   vendor: string
+  condition: 'new' | 'used'
+  color: string
+  material: string
+  custom_fields: Record<string, string>  // власні характеристики, налаштовані в /platforms
+  // Посилання на категорію маркетплейсу Prom.ua (необов'язково). Якщо не вказано —
+  // Prom сам автоматично визначає категорію за назвою/описом/ціною товару (офіційно
+  // задокументована поведінка), тому спеціальний пошук/API тут не потрібен.
+  category_url: string
 }
 
 interface Props {
   value: PromData
   onChange: (data: PromData) => void
 }
-
-const AVAILABILITY_OPTIONS = [
-  { value: 'in_stock',      label: '✅ В наявності' },
-  { value: 'order',         label: '🔄 Під замовлення' },
-  { value: 'not_available', label: '❌ Немає в наявності' },
-]
 
 function buildGroupPath(group: PromGroup, all: PromGroup[]): string {
   if (!group.parent_group_id) return group.name
@@ -46,12 +45,10 @@ function buildGroupPath(group: PromGroup, all: PromGroup[]): string {
 
 export function PromFields({ value, onChange }: Props) {
   const [groups, setGroups] = useState<PromGroup[]>([])
-  const [categories, setCategories] = useState<PromCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [groupSearch, setGroupSearch] = useState('')
-  const [categorySearch, setCategorySearch] = useState('')
-  const [keywordInput, setKeywordInput] = useState('')
+  const [customFieldNames, setCustomFieldNames] = useState<string[]>([])
 
   useEffect(() => {
     let cancelled = false
@@ -64,7 +61,6 @@ export function PromFields({ value, onChange }: Props) {
           setError(data.error)
         } else {
           setGroups(data.groups ?? [])
-          setCategories(data.categories ?? [])
         }
       })
       .catch(() => {
@@ -74,21 +70,19 @@ export function PromFields({ value, onChange }: Props) {
         if (!cancelled) setLoading(false)
       })
 
+    fetch('/api/prom/settings')
+      .then(r => r.json())
+      .then(data => { if (!cancelled) setCustomFieldNames(data.custom_fields ?? []) })
+      .catch(() => {})
+
     return () => { cancelled = true }
   }, [])
 
-  function addKeyword(e: React.KeyboardEvent) {
-    if (e.key === 'Enter' && keywordInput.trim()) {
-      e.preventDefault()
-      if (!value.keywords.includes(keywordInput.trim())) {
-        onChange({ ...value, keywords: [...value.keywords, keywordInput.trim()] })
-      }
-      setKeywordInput('')
-    }
-  }
-
-  function removeKeyword(kw: string) {
-    onChange({ ...value, keywords: value.keywords.filter(k => k !== kw) })
+  function setCustomField(key: string, val: string) {
+    onChange({
+      ...value,
+      custom_fields: { ...value.custom_fields, [key]: val },
+    })
   }
 
   // Групи з повним шляхом для відображення
@@ -101,16 +95,11 @@ export function PromFields({ value, onChange }: Props) {
     g.fullPath.toLowerCase().includes(groupSearch.toLowerCase())
   )
 
-  const filteredCategories = categories.filter(c =>
-    c.caption.toLowerCase().includes(categorySearch.toLowerCase())
-  )
-
   const selectedGroup = groupsWithPath.find(g => String(g.id) === value.group_id)
-  const selectedCategory = categories.find(c => String(c.id) === value.marketplace_category_id)
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-[#1E1E23] rounded-xl border border-[#2A2A32]">
-      <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
+      <div className="text-xs font-semibold uppercase tracking-wider text-[#7b04df]">
         🛒 Додаткові поля Prom.ua
       </div>
 
@@ -129,14 +118,20 @@ export function PromFields({ value, onChange }: Props) {
         <div>
           <label className="text-zinc-400 text-sm font-semibold block mb-1.5">
             Група на сайті{' '}
-            <span className="text-zinc-600">(необов&apos;язково)</span>
+            <span className="text-zinc-600">(лише підказка — не передається в Prom)</span>
           </label>
+          <div className="text-amber-500/80 text-xs mb-2">
+            ⚠️ Спроба автоматично прив&apos;язати товар до групи через YML призводила до
+            дублікатів груп в кабінеті Prom, тому це поле більше нічого нікуди не надсилає —
+            це просто нагадування собі, до якої групи потім вручну прикріпити товар в
+            кабінеті Prom.
+          </div>
 
           {selectedGroup && (
-            <div className="mb-2 flex items-center justify-between text-xs text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded-lg px-2.5 py-1.5">
+            <div className="mb-2 flex items-center justify-between text-xs text-[#7b04df] bg-[#7b04df]/10 border border-[#7b04df]/20 rounded-lg px-2.5 py-1.5">
               <span>✓ {selectedGroup.fullPath}</span>
               <button
-                onClick={() => { onChange({ ...value, group_id: '' }); setGroupSearch('') }}
+                onClick={() => { onChange({ ...value, group_id: '', group_parent_id: '' }); setGroupSearch('') }}
                 className="text-zinc-500 hover:text-red-400 ml-2"
               >✕</button>
             </div>
@@ -159,11 +154,22 @@ export function PromFields({ value, onChange }: Props) {
                   <div
                     key={g.id}
                     onClick={() => {
-                      onChange({ ...value, group_id: String(g.id), group_name: g.fullPath })
+                      // ВАЖЛИВО: в group_name зберігаємо ВЛАСНУ назву групи (g.name), а не
+                      // повний шлях (g.fullPath, який показуємо тільки в UI для орієнтації).
+                      // Раніше сюди писався fullPath ("Батько → Дитина"), і оскільки такого
+                      // тексту нема серед реальних назв груп в акаунті Prom, Prom не міг
+                      // розпізнати це як вже існуючу групу за іменем — і при кожному імпорті
+                      // створював нову групу-дублікат з тим самим id, замість перевикористання.
+                      onChange({
+                        ...value,
+                        group_id: String(g.id),
+                        group_name: g.name,
+                        group_parent_id: g.parent_group_id ? String(g.parent_group_id) : '',
+                      })
                       setGroupSearch('')
                     }}
                     className={`px-3 py-2 text-sm cursor-pointer hover:bg-[#2A2A32] transition-colors
-                      ${value.group_id === String(g.id) ? 'text-orange-400' : 'text-zinc-300'}`}
+                      ${value.group_id === String(g.id) ? 'text-[#7b04df]' : 'text-zinc-300'}`}
                   >
                     {g.fullPath}
                   </div>
@@ -174,61 +180,25 @@ export function PromFields({ value, onChange }: Props) {
         </div>
       )}
 
-      {/* Категорія маркетплейсу */}
-      {!loading && !error && (
-        <div>
-          <label className="text-zinc-400 text-sm font-semibold block mb-1.5">
-            Категорія маркетплейсу{' '}
-            <span className="text-zinc-600">(необов&apos;язково — можна вибрати при імпорті)</span>
-          </label>
-
-          {selectedCategory && (
-            <div className="mb-2 flex items-center justify-between text-xs text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded-lg px-2.5 py-1.5">
-              <span>✓ {selectedCategory.caption}</span>
-              <button
-                onClick={() => { onChange({ ...value, marketplace_category_id: '' }); setCategorySearch('') }}
-                className="text-zinc-500 hover:text-red-400 ml-2"
-              >✕</button>
-            </div>
-          )}
-
-          <input
-            className="w-full bg-[#17171A] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2 text-white text-sm outline-none mb-1"
-            placeholder={categories.length === 0 ? 'Категорії недоступні' : 'Пошук категорії...'}
-            value={categorySearch}
-            onChange={e => setCategorySearch(e.target.value)}
-            disabled={categories.length === 0}
-          />
-
-          {categorySearch && (
-            <div className="max-h-40 overflow-y-auto border border-[#2A2A32] rounded-lg bg-[#17171A]">
-              {filteredCategories.length === 0 ? (
-                <div className="p-3 text-zinc-500 text-sm">Нічого не знайдено</div>
-              ) : (
-                filteredCategories.slice(0, 30).map(c => (
-                  <div
-                    key={c.id}
-                    onClick={() => {
-                      onChange({ ...value, marketplace_category_id: String(c.id) })
-                      setCategorySearch('')
-                    }}
-                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-[#2A2A32] transition-colors
-                      ${value.marketplace_category_id === String(c.id) ? 'text-orange-400' : 'text-zinc-300'}`}
-                  >
-                    {c.caption}
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {categories.length === 0 && !loading && (
-            <div className="text-zinc-600 text-xs mt-1">
-              Можна вибрати категорію вручну при імпорті в кабінеті Prom
-            </div>
-          )}
+      {/* Категорія на маркетплейсі */}
+      <div>
+        <label className="text-zinc-400 text-sm font-semibold block mb-1.5">
+          Категорія на маркетплейсі{' '}
+          <span className="text-zinc-600">(необов&apos;язково)</span>
+        </label>
+        <input
+          className="w-full bg-[#17171A] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2 text-white text-sm outline-none"
+          placeholder="Посилання на категорію з сайту Prom.ua"
+          value={value.category_url}
+          onChange={e => onChange({ ...value, category_url: e.target.value })}
+        />
+        <div className="text-zinc-600 text-xs mt-1">
+          Визначає категорію розміщення вашого товару в каталозі Prom.ua. Відкрийте потрібну
+          категорію на prom.ua і вставте сюди посилання з адресного рядка. Якщо не вказати —
+          Prom.ua спробує визначити категорію сама за назвою, описом і ціною товару (іноді
+          вгадує неправильно — тоді категорію можна змінити вручну в кабінеті Prom).
         </div>
-      )}
+      </div>
 
       {/* Виробник */}
       <div>
@@ -243,64 +213,18 @@ export function PromFields({ value, onChange }: Props) {
         />
       </div>
 
-      {/* Стара ціна */}
+      {/* Одиниця виміру (Кількість — спільне поле, див. блок "Спільні поля" вище) */}
       <div>
-        <label className="text-zinc-400 text-sm font-semibold block mb-1.5">
-          Стара ціна <span className="text-zinc-600">(необов&apos;язково)</span>
-        </label>
-        <input
-          type="number"
+        <label className="text-zinc-400 text-sm font-semibold block mb-1.5">Одиниця виміру</label>
+        <select
           className="w-full bg-[#17171A] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2 text-white text-sm outline-none"
-          placeholder="0.00"
-          value={value.old_price}
-          onChange={e => onChange({ ...value, old_price: e.target.value })}
-        />
-      </div>
-
-      {/* Наявність */}
-      <div>
-        <label className="text-zinc-400 text-sm font-semibold block mb-1.5">Наявність</label>
-        <div className="flex flex-col gap-1.5">
-          {AVAILABILITY_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => onChange({ ...value, availability: opt.value as PromData['availability'] })}
-              className={`text-left px-3 py-2 rounded-lg border text-sm transition-all
-                ${value.availability === opt.value
-                  ? 'border-orange-500/50 bg-orange-500/10 text-orange-400'
-                  : 'border-[#2A2A32] text-zinc-400 hover:border-zinc-500'
-                }`}
-            >
-              {opt.label}
-            </button>
+          value={value.unit}
+          onChange={e => onChange({ ...value, unit: e.target.value })}
+        >
+          {['шт','кг','г','м','см','л','мл','пара','комплект'].map(u => (
+            <option key={u} value={u}>{u}</option>
           ))}
-        </div>
-      </div>
-
-      {/* Кількість та одиниця */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-zinc-400 text-sm font-semibold block mb-1.5">Кількість</label>
-          <input
-            type="number"
-            className="w-full bg-[#17171A] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2 text-white text-sm outline-none"
-            placeholder="0"
-            value={value.quantity}
-            onChange={e => onChange({ ...value, quantity: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className="text-zinc-400 text-sm font-semibold block mb-1.5">Одиниця</label>
-          <select
-            className="w-full bg-[#17171A] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2 text-white text-sm outline-none"
-            value={value.unit}
-            onChange={e => onChange({ ...value, unit: e.target.value })}
-          >
-            {['шт','кг','г','м','см','л','мл','пара','комплект'].map(u => (
-              <option key={u} value={u}>{u}</option>
-            ))}
-          </select>
-        </div>
+        </select>
       </div>
 
       {/* SKU */}
@@ -317,34 +241,44 @@ export function PromFields({ value, onChange }: Props) {
         />
       </div>
 
-      {/* Ключові слова */}
-      <div>
-        <label className="text-zinc-400 text-sm font-semibold block mb-1.5">
-          Пошукові запити (теги)
-        </label>
-        <input
-          className="w-full bg-[#17171A] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2 text-white text-sm outline-none"
-          placeholder="Введіть тег і натисніть Enter"
-          value={keywordInput}
-          onChange={e => setKeywordInput(e.target.value)}
-          onKeyDown={addKeyword}
-        />
-        {value.keywords.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {value.keywords.map(kw => (
-              <span
-                key={kw}
-                className="flex items-center gap-1 bg-[#2A2A32] text-zinc-300 text-xs px-2 py-1 rounded-full"
-              >
-                {kw}
-                <button
-                  onClick={() => removeKeyword(kw)}
-                  className="text-zinc-500 hover:text-red-400 transition-colors"
-                >✕</button>
-              </span>
-            ))}
+      {/* Кастомні характеристики (налаштовуються в /platforms) */}
+      {customFieldNames.length > 0 && (
+        <div className="flex flex-col gap-3 pt-2 border-t border-[#2A2A32]">
+          <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            Характеристики
           </div>
-        )}
+          {customFieldNames.map(fieldName => (
+            <div key={fieldName}>
+              <label className="text-zinc-400 text-sm font-semibold block mb-1.5">
+                {fieldName}
+              </label>
+              <input
+                className="w-full bg-[#17171A] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2 text-white text-sm outline-none"
+                placeholder={fieldName}
+                value={value.custom_fields[fieldName] ?? ''}
+                onChange={e => setCustomField(fieldName, e.target.value)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {customFieldNames.length === 0 && (
+        <div className="text-zinc-600 text-xs pt-2 border-t border-[#2A2A32]">
+          Характеристики не налаштовані —{' '}
+          <a href="/platforms" className="text-[#A78BFA] hover:underline">
+            налаштувати в платформах
+          </a>
+        </div>
+      )}
+
+      {/* Підказка про мову імпорту */}
+      <div className="text-zinc-600 text-xs pt-2 border-t border-[#2A2A32]">
+        💡 Назва/Опис/Пошукові запити заповнюються однаково і в українську, і в російську
+        версію товару на Prom (щоб українська версія на сайті точно не була порожньою). Якщо
+        після імпорту хочете саме російський переклад — на сторінці товару в кабінеті Prom
+        буде помітка «Перекласти українською/російською», її треба натиснути вручну на
+        кожному товарі (автоматичного перекладу під час імпорту файлу немає).
       </div>
     </div>
   )

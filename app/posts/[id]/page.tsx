@@ -1,13 +1,17 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
+import { DeletePostButton } from '@/components/posts/DeletePostButton'
+import { getStatusMeta } from '@/lib/posts/status'
 
 const PLATFORM_META: Record<string, { icon: string; name: string; color: string }> = {
   instagram:   { icon: '📸', name: 'Instagram',   color: 'bg-pink-500/15 text-pink-400' },
   telegram:    { icon: '✈️', name: 'Telegram',    color: 'bg-sky-500/15 text-sky-400' },
-  prom:        { icon: '🛒', name: 'Prom.ua',     color: 'bg-orange-500/15 text-orange-400' },
+  // Фірмові кольори платформ: Prom — фіолетовий, Horoshop — жовтий (їхній брендовий).
+  // Раніше обидва були orange/red — червоний асоціюється з помилкою і збивав з пантелику.
+  prom:        { icon: '🛒', name: 'Prom.ua',     color: 'bg-[#7b04df]/15 text-[#7b04df]' },
   woocommerce: { icon: '🌐', name: 'WooCommerce', color: 'bg-purple-500/15 text-purple-400' },
-  horoshop:    { icon: '🏪', name: 'Horoshop',    color: 'bg-red-500/15 text-red-400' },
+  horoshop:    { icon: '🏪', name: 'Horoshop',    color: 'bg-[#f6d811]/15 text-[#f6d811]' },
 }
 
 export default async function PostPage({
@@ -44,17 +48,11 @@ export default async function PostPage({
         >
           ← Назад
         </Link>
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full
-          ${post.status === 'published'
-            ? 'bg-emerald-500/15 text-emerald-400'
-            : post.status === 'partial'
-            ? 'bg-amber-500/15 text-amber-400'
-            : 'bg-zinc-700/50 text-zinc-400'
-          }`}>
-          {post.status === 'published' ? '✓ Опубліковано'
-            : post.status === 'partial' ? '⚠ Частково'
-            : 'Чернетка'}
+        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${getStatusMeta(post.status).className}`}>
+          {getStatusMeta(post.status).label}
         </span>
+        <div className="flex-1" />
+        <DeletePostButton id={id} redirectAfter />
       </div>
 
       {/* Content */}
@@ -123,7 +121,7 @@ export default async function PostPage({
           <div className="flex flex-col gap-3">
 
             {hasProm && (
-              <div className="flex items-center justify-between p-4 bg-orange-500/5 border border-orange-500/20 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-[#7b04df]/5 border border-[#7b04df]/20 rounded-xl">
                 <div>
                   <div className="text-white text-sm font-semibold">🛒 Prom.ua</div>
                   <div className="text-zinc-500 text-xs mt-0.5">
@@ -133,7 +131,7 @@ export default async function PostPage({
                 <a
                   href={`/api/posts/${id}/download/prom`}
                   download
-                  className="px-4 py-2 rounded-lg bg-orange-500/15 border border-orange-500/30 text-orange-400 text-sm font-semibold hover:bg-orange-500/25 transition-colors whitespace-nowrap"
+                  className="px-4 py-2 rounded-lg bg-[#7b04df]/15 border border-[#7b04df]/30 text-[#7b04df] text-sm font-semibold hover:bg-[#7b04df]/25 transition-colors whitespace-nowrap"
                 >
                   ↓ Завантажити YML
                 </a>
@@ -141,7 +139,7 @@ export default async function PostPage({
             )}
 
             {hasHoroshop && (
-              <div className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/20 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-[#f6d811]/5 border border-[#f6d811]/20 rounded-xl">
                 <div>
                   <div className="text-white text-sm font-semibold">🏪 Horoshop</div>
                   <div className="text-zinc-500 text-xs mt-0.5">
@@ -151,7 +149,7 @@ export default async function PostPage({
                 <a
                   href={`/api/posts/${id}/download/horoshop`}
                   download
-                  className="px-4 py-2 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-sm font-semibold hover:bg-red-500/25 transition-colors whitespace-nowrap"
+                  className="px-4 py-2 rounded-lg bg-[#f6d811]/15 border border-[#f6d811]/30 text-[#f6d811] text-sm font-semibold hover:bg-[#f6d811]/25 transition-colors whitespace-nowrap"
                 >
                   ↓ Завантажити CSV
                 </a>

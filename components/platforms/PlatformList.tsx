@@ -8,6 +8,7 @@ import { PromModal } from './modals/PromModal'
 import { WooModal } from './modals/WooModal'
 import { HoroshopModal } from './modals/HoroshopModal'
 import { HoroshopSettingsModal } from './modals/HoroshopSettingsModal'
+import { PromSettingsModal } from './modals/PromSettingsModal'
 
 const PLATFORMS = [
   {
@@ -29,7 +30,7 @@ const PLATFORMS = [
     name: 'Prom.ua',
     icon: '🛒',
     desc: 'Завантажуйте товари через YML файл.',
-    color: 'from-[#FF6600] to-[#CC4400]',
+    color: 'from-[#7b04df] to-[#5a02a3]',
   },
   {
     id: 'woocommerce',
@@ -43,7 +44,7 @@ const PLATFORMS = [
     name: 'Horoshop',
     icon: '🏪',
     desc: 'Публікуйте товари через API або CSV файл.',
-    color: 'from-[#FF6B35] to-[#E55A2B]',
+    color: 'from-[#f6d811] to-[#d9bc0a]',
   },
 ]
 
@@ -64,6 +65,7 @@ export function PlatformList({ connected, expiringPlatforms }: Props) {
   const [connectedList, setConnectedList] = useState<string[]>(connected)
   const [openModal, setOpenModal] = useState<string | null>(null)
   const [showHoroshopSettings, setShowHoroshopSettings] = useState(false)
+  const [showPromSettings, setShowPromSettings] = useState(false)
 
   const ActiveModal = openModal ? MODALS[openModal] : null
 
@@ -78,10 +80,18 @@ export function PlatformList({ connected, expiringPlatforms }: Props) {
               onConnect={() => setOpenModal(p.id)}
               tokenExpiresSoon={expiringPlatforms.includes(p.id)}
             />
-            {/* Кнопка налаштувань тільки для Horoshop якщо підключено */}
+            {/* Кнопка налаштувань характеристик — тільки для Horoshop/Prom якщо підключено */}
             {p.id === 'horoshop' && connectedList.includes('horoshop') && (
               <button
                 onClick={() => setShowHoroshopSettings(true)}
+                className="w-full py-2 rounded-lg bg-[#1E1E23] border border-[#2A2A32] hover:border-zinc-500 text-zinc-400 hover:text-white text-xs font-semibold transition-colors"
+              >
+                ⚙️ Налаштувати характеристики товарів
+              </button>
+            )}
+            {p.id === 'prom' && connectedList.includes('prom') && (
+              <button
+                onClick={() => setShowPromSettings(true)}
                 className="w-full py-2 rounded-lg bg-[#1E1E23] border border-[#2A2A32] hover:border-zinc-500 text-zinc-400 hover:text-white text-xs font-semibold transition-colors"
               >
                 ⚙️ Налаштувати характеристики товарів
@@ -105,6 +115,10 @@ export function PlatformList({ connected, expiringPlatforms }: Props) {
 
       {showHoroshopSettings && (
         <HoroshopSettingsModal onClose={() => setShowHoroshopSettings(false)} />
+      )}
+
+      {showPromSettings && (
+        <PromSettingsModal onClose={() => setShowPromSettings(false)} />
       )}
     </>
   )

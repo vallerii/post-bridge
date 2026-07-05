@@ -42,6 +42,16 @@ export function Sidebar() {
     router.refresh()
   }
 
+  // Знаходимо найбільш точний (найдовший) збіг серед пунктів меню,
+  // щоб при вкладених шляхах (напр. /posts і /posts/new) підсвічувався
+  // лише один, найбільш конкретний пункт.
+  const activeHref = NAV.reduce<string | null>((best, item) => {
+    const matches = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
+    if (!matches) return best
+    if (!best || item.href.length > best.length) return item.href
+    return best
+  }, null)
+
   return (
     <aside className="fixed top-0 left-0 bottom-0 min-w-[220px] bg-[#17171A] border-r border-[#2A2A32] flex flex-col px-3 py-6 z-40">
 
@@ -59,7 +69,7 @@ export function Sidebar() {
       {/* Nav */}
       <nav className="flex flex-col gap-1 flex-1">
         {NAV.map(({ href, icon, label }) => {
-          const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+          const active = href === activeHref
           return (
             <Link
               key={href}

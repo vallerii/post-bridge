@@ -1,10 +1,13 @@
 import Link from 'next/link'
+import { DeletePostButton } from './DeletePostButton'
+import { getStatusMeta } from '@/lib/posts/status'
 
 const PLATFORM_META: Record<string, { icon: string; name: string; color: string }> = {
   instagram:   { icon: '📸', name: 'Instagram',    color: 'bg-pink-500/15 text-pink-400' },
   telegram:    { icon: '✈️', name: 'Telegram',     color: 'bg-sky-500/15 text-sky-400' },
-  prom:        { icon: '🛒', name: 'Prom.ua',      color: 'bg-orange-500/15 text-orange-400' },
+  prom:        { icon: '🛒', name: 'Prom.ua',      color: 'bg-[#7b04df]/15 text-[#7b04df]' },
   woocommerce: { icon: '🌐', name: 'WooCommerce',  color: 'bg-purple-500/15 text-purple-400' },
+  horoshop:    { icon: '🏪', name: 'Horoshop',     color: 'bg-[#f6d811]/15 text-[#f6d811]' },
 }
 
 interface Post {
@@ -69,15 +72,14 @@ export function PostList({ posts }: Props) {
                     </span>
                   ) : null
                 })}
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full
-                  ${post.status === 'published'
-                    ? 'bg-emerald-500/15 text-emerald-400'
-                    : 'bg-zinc-700/50 text-zinc-400'
-                  }`}>
-                  {post.status === 'published' ? '✓ Опубліковано' : 'Чернетка'}
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getStatusMeta(post.status).className}`}>
+                  {getStatusMeta(post.status).label}
                 </span>
               </div>
             </div>
+
+            {/* delete */}
+            <DeletePostButton id={post.id} />
           </div>
         </Link>
       ))}

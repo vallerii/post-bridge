@@ -5,21 +5,45 @@ import { useState } from 'react'
 interface Props {
   initialFields: string[]
   onSave: (fields: string[]) => Promise<void>
+  hint?: string
+  placeholder?: string
+  emptyLabel?: string
+  saveLabel?: string
+  // Назви, які не можна додати як власну характеристику (напр. базові колонки CSV
+  // Horoshop типу "Кількість" — інакше вийде дублікат колонки і Horoshop не прийме файл).
+  reservedNames?: string[]
 }
 
-export function HoroshopFieldsEditor({ initialFields, onSave }: Props) {
+export function HoroshopFieldsEditor({
+  initialFields,
+  onSave,
+  hint = 'Додайте характеристики які будуть з’являтись у формі при заповненні товару для Horoshop. Наприклад: Колір, Матеріал, Розмір.',
+  placeholder = 'Наприклад: Колір → Enter щоб додати',
+  emptyLabel = 'Характеристик поки немає',
+  saveLabel = 'Зберегти характеристики',
+  reservedNames = [],
+}: Props) {
   const [fields, setFields] = useState<string[]>(initialFields)
   const [input, setInput] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [warning, setWarning] = useState('')
 
   function addField(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && input.trim()) {
       e.preventDefault()
       const trimmed = input.trim()
-      if (!fields.includes(trimmed)) {
+      const isReserved = reservedNames.some(
+        r => r.toLowerCase() === trimmed.toLowerCase()
+      )
+      if (isReserved) {
+        setWarning(`«${trimmed}» вже є стандартним полем Horoshop — не можна додати як окрему характеристику`)
+        return
+      }
+      if (!fields.some(f => f.toLowerCase() === trimmed.toLowerCase())) {
         setFields(prev => [...prev, trimmed])
       }
+      setWarning('')
       setInput('')
     }
   }
@@ -57,8 +81,7 @@ export function HoroshopFieldsEditor({ initialFields, onSave }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <div className="text-zinc-400 text-sm">
-        Додайте характеристики які будуть з&apos;являтись у формі при заповненні товару для Horoshop.
-        Наприклад: Колір, Матеріал, Розмір.
+        {hint}
       </div>
 
       {/* Список */}
@@ -93,18 +116,23 @@ export function HoroshopFieldsEditor({ initialFields, onSave }: Props) {
 
       {fields.length === 0 && (
         <div className="text-zinc-600 text-sm text-center py-4 border border-dashed border-[#2A2A32] rounded-lg">
-          Характеристик поки немає
+          {emptyLabel}
         </div>
       )}
 
       {/* Додати */}
       <input
         className="w-full bg-[#17171A] border border-[#2A2A32] focus:border-[#6C63FF] rounded-lg px-3 py-2.5 text-white text-sm outline-none"
-        placeholder="Наприклад: Колір → Enter щоб додати"
+        placeholder={placeholder}
         value={input}
-        onChange={e => setInput(e.target.value)}
+        onChange={e => { setInput(e.target.value); setWarning('') }}
         onKeyDown={addField}
       />
+      {warning && (
+        <div className="text-amber-400 text-xs bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 -mt-2">
+          ⚠️ {warning}
+        </div>
+      )}
 
       <button
         onClick={handleSave}
@@ -115,7 +143,7 @@ export function HoroshopFieldsEditor({ initialFields, onSave }: Props) {
             : 'bg-[#6C63FF] hover:bg-[#7B74FF] disabled:opacity-40 text-white'
         }`}
       >
-        {saving ? 'Збереження...' : saved ? '✓ Збережено' : 'Зберегти характеристики'}
+        {saving ? 'Збереження...' : saved ? '✓ Збережено' : saveLabel}
       </button>
     </div>
   )

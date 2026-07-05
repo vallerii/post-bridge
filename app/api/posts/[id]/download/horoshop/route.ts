@@ -34,10 +34,20 @@ export async function GET(
     .single()
 
   const credentials = (platform?.credentials ?? {}) as Record<string, unknown>
-  const customFieldNames = (credentials.custom_fields as string[]) ?? []
+  // custom_fields зберігається в БД як JSON-рядок (див. PATCH /api/horoshop/settings),
+  // а не як "голий" масив — тому просто закасту недостатньо, треба розпарсити,
+  // так само як це вже робить GET /api/horoshop/settings.
+  let customFieldNames: string[] = []
+  try {
+    const raw = credentials.custom_fields
+    customFieldNames = typeof raw === 'string' ? JSON.parse(raw) : (raw as string[]) ?? []
+  } catch {
+    customFieldNames = []
+  }
 
   const csv = generateHoroshopCsv(
     {
+      id: post.id,
       title: post.title,
       description: post.description,
       price: post.price,

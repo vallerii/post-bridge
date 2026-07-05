@@ -1,12 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createPost } from '@/lib/posts/actions'
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { MediaUpload } from './MediaUpload'
 import type { MediaFile } from '@/lib/storage/upload'
 import { PromFields, type PromData } from './PromFields'
+import { HoroshopFields } from './HoroshopFields'
+import type { HoroshopData } from '@/lib/publishers/types'
+import { SharedMarketplaceFields, type SharedMarketplaceData } from './SharedMarketplaceFields'
 
 
 const PLATFORM_META: Record<string, {
@@ -15,9 +19,9 @@ const PLATFORM_META: Record<string, {
 }> = {
   instagram:   { name: 'Instagram',   icon: '📸', chipClass: 'border-pink-500/50 bg-pink-500/10 text-pink-400',     maxChars: 2200, needsTitle: false, needsPrice: false },
   telegram:    { name: 'Telegram',    icon: '✈️', chipClass: 'border-sky-500/50 bg-sky-500/10 text-sky-400',        maxChars: 4096, needsTitle: false, needsPrice: false },
-  prom:        { name: 'Prom.ua',     icon: '🛒', chipClass: 'border-orange-500/50 bg-orange-500/10 text-orange-400', maxChars: 9999, needsTitle: true,  needsPrice: true },
+  prom:        { name: 'Prom.ua',     icon: '🛒', chipClass: 'border-[#7b04df]/50 bg-[#7b04df]/10 text-[#7b04df]', maxChars: 9999, needsTitle: true,  needsPrice: true },
   woocommerce: { name: 'WooCommerce', icon: '🌐', chipClass: 'border-purple-500/50 bg-purple-500/10 text-purple-400', maxChars: 9999, needsTitle: true,  needsPrice: true },
-  horoshop:    { name: 'Horoshop',    icon: '🏪', chipClass: 'border-red-500/50 bg-red-500/10 text-red-400',        maxChars: 9999, needsTitle: true,  needsPrice: true },
+  horoshop:    { name: 'Horoshop',    icon: '🏪', chipClass: 'border-[#f6d811]/50 bg-[#f6d811]/10 text-[#f6d811]', maxChars: 9999, needsTitle: true,  needsPrice: true },
 }
 
 interface Props {
@@ -25,6 +29,7 @@ interface Props {
 }
 
 export function PostForm({ connectedPlatforms }: Props) {
+  const router = useRouter()
   const [targets, setTargets] = useState<string[]>([])
   const [title, setTitle] = useState('')
   const [desc, setDesc] = useState('')
@@ -37,7 +42,7 @@ export function PostForm({ connectedPlatforms }: Props) {
   const [promData, setPromData] = useState<PromData>({
     group_id: '',
     group_name: '',
-    marketplace_category_id: '',
+    group_parent_id: '',
     old_price: '',
     availability: 'in_stock',
     quantity: '',
@@ -45,6 +50,28 @@ export function PostForm({ connectedPlatforms }: Props) {
     sku: '',
     keywords: [],
     vendor: '',
+    custom_fields: {},
+    category_url: '',
+  })
+  const [horoshopData, setHoroshopData] = useState<HoroshopData>({
+    sku: '',
+    old_price: '',
+    availability: 'in_stock',
+    quantity: '',
+    custom_fields: {},
+    category_id: '',
+    category_name: '',
+  })
+  // Поля, спільні для Prom і Horoshop (щоб не заповнювати їх двічі, коли обрані обидві
+  // платформи) — підставляються в promData/horoshopData перед відправкою в handleSubmit.
+  const [sharedData, setSharedData] = useState<SharedMarketplaceData>({
+    old_price: '',
+    quantity: '',
+    availability: 'in_stock',
+    keywords: [],
+    condition: 'new',
+    color: '',
+    material: '',
   })
 
   useEffect(() => {
@@ -70,6 +97,10 @@ export function PostForm({ connectedPlatforms }: Props) {
     if (!desc.trim() && !title.trim()) errors.push('потрібен текст')
     if (m.needsPrice && !price) warns.push('немає ціни')
     if (desc.length > m.maxChars) errors.push(`текст > ${m.maxChars} символів`)
+    // Horoshop (CSV-імпорт для Basic/Standard) вимагає розділ каталогу як обов'язкове
+    // поле для нового товару — без нього імпорт цього рядка впаде з помилкою. Для Pro
+    // (публікація напряму через API) це не так критично, але попередження не завадить.
+    if (p === 'horoshop' && !horoshopData.category_name) warns.push('не вказано розділ каталогу')
     return { ok: errors.length === 0, errors, warns }
   }
 
@@ -79,7 +110,12 @@ export function PostForm({ connectedPlatforms }: Props) {
     setLoading(true)
     setError('')
     try {
-      await createPost({
+      // Спільні поля (стара ціна / наявність / кількість / теги) підставляються
+      // однаково в обидва об'єкти — юзер заповнює їх один раз для обох платформ.
+      const finalPromData: PromData = { ...promData, ...sharedData }
+      const finalHoroshopData: HoroshopData = { ...horoshopData, ...sharedData }
+
+      const result = await createPost({
         title,
         description: desc,
         price,
@@ -88,8 +124,10 @@ export function PostForm({ connectedPlatforms }: Props) {
         status,
         media_urls: media.map(f => f.url),
         media_types: media.map(f => f.type),
-        prom_data: targets.includes('prom') ? promData : null,
+        prom_data: targets.includes('prom') ? finalPromData : null,
+        horoshop_data: targets.includes('horoshop') ? finalHoroshopData : null,
       })
+      router.push(`/posts/${result.id}`)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Помилка')
       setLoading(false)
@@ -200,8 +238,16 @@ export function PostForm({ connectedPlatforms }: Props) {
             </div>
           )}
 
+          {(targets.includes('prom') || targets.includes('horoshop')) && (
+            <SharedMarketplaceFields value={sharedData} onChange={setSharedData} />
+          )}
+
           {targets.includes('prom') && (
             <PromFields value={promData} onChange={setPromData} />
+          )}
+
+          {targets.includes('horoshop') && (
+            <HoroshopFields value={horoshopData} onChange={setHoroshopData} />
           )}
         </div>
       </div>

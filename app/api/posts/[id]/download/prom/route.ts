@@ -25,6 +25,7 @@ export async function GET(
   }
 
   const yml = generatePromYml({
+    id: post.id,
     title: post.title,
     description: post.description,
     price: post.price,

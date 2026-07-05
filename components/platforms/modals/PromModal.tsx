@@ -34,8 +34,8 @@ export function PromModal({ onClose, onSuccess }: Props) {
           <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-4">Крок 1 — Перевірка</p>
 
           {/* Як працює інтеграція */}
-          <div className="mb-5 p-4 bg-orange-500/8 border border-orange-500/20 rounded-xl">
-            <div className="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-3">
+          <div className="mb-5 p-4 bg-[#7b04df]/8 border border-[#7b04df]/20 rounded-xl">
+            <div className="text-[#7b04df] text-xs font-semibold uppercase tracking-wider mb-3">
               📦 Як працює публікація на Prom
             </div>
             <div className="flex flex-col gap-2.5">
@@ -52,7 +52,7 @@ export function PromModal({ onClose, onSuccess }: Props) {
                 <span>Імпортуєте файл у кабінеті Prom: <span className="text-zinc-400">Товари → Імпорт</span></span>
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-orange-500/15 text-zinc-500 text-xs">
+            <div className="mt-3 pt-3 border-t border-[#7b04df]/15 text-zinc-500 text-xs">
               API Prom не дозволяє створювати товари напряму — тільки через імпорт файлу
             </div>
           </div>

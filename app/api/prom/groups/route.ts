@@ -36,6 +36,5 @@ export async function GET() {
 
   return NextResponse.json({
     groups: groups.groups ?? [],
-    categories: [], // Prom не надає публічний endpoint для категорій маркетплейсу
   })
 }
