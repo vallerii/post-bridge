@@ -50,6 +50,9 @@ export function PostForm({ connectedPlatforms }: Props) {
     sku: '',
     keywords: [],
     vendor: '',
+    condition: 'new',
+    color: '',
+    material: '',
     custom_fields: {},
     category_url: '',
   })
